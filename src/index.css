@@ -174,11 +174,13 @@ header.masthead {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  height: 38px; /* match .controls input / select computed height */
   font-family: var(--mono);
   font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 9px 14px;
+  padding: 0 14px;
   border: 1px solid var(--rule-2);
   background: var(--paper);
   color: var(--ink-2);
@@ -680,7 +682,8 @@ footer.site-footer a:hover {
   .filter-pill {
     grid-column: 1 / -1;
     justify-content: center;
-    padding: 12px 14px; /* larger touch target */
+    height: 48px; /* larger touch target, matches mobile input height */
+    padding: 0 14px;
   }
   .controls input,
   .controls select {
