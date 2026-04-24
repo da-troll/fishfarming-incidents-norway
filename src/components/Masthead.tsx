@@ -49,11 +49,20 @@ export function Masthead({
 
   return (
     <header className="masthead">
-      <div>
-        <h1>
-          Fiskehelseregisteret <em>— anleggsoversikt</em>
-        </h1>
-        <div className="sub">Live · via lokal proxy · Mattilsynet</div>
+      <div className="masthead-title">
+        <img
+          src="/fishfarm_api_logo-clean.png"
+          alt=""
+          className="masthead-logo"
+          width={56}
+          height={56}
+        />
+        <div>
+          <h1>
+            Fiskehelseregisteret <em>— anleggsoversikt</em>
+          </h1>
+          <div className="sub">Live · via lokal proxy · Mattilsynet</div>
+        </div>
       </div>
       <div className="meta meta-row">
         {statusNode && <span className="meta-item meta-status">{statusNode}</span>}

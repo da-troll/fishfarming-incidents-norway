@@ -50,6 +50,17 @@ header.masthead {
   align-items: end;
   background: var(--paper);
 }
+.masthead-title {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.masthead-logo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: block;
+}
 .masthead h1 {
   font-family: var(--display);
   font-weight: 400;
@@ -632,6 +643,13 @@ footer.site-footer a:hover {
     gap: 14px;
     align-items: start;
   }
+  .masthead-title {
+    gap: 12px;
+  }
+  .masthead-logo {
+    width: 42px;
+    height: 42px;
+  }
   .masthead h1 {
     font-size: 28px;
     line-height: 1.05;
@@ -714,6 +732,10 @@ footer.site-footer a:hover {
    Responsive — phone (≤ 480px): hide Eier column (still visible in detail).
    ========================================================================= */
 @media (max-width: 480px) {
+  .masthead-logo {
+    width: 36px;
+    height: 36px;
+  }
   .masthead h1 {
     font-size: 24px;
   }
