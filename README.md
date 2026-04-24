@@ -566,6 +566,7 @@ it. Not included here; the systemd path above is simpler for a single box.
 
 ## License
 
-No license specified; this is a personal tool. The upstream data belongs to
-Mattilsynet and is published under their terms. Treat as MIT-ish for
-reuse but attribute appropriately if you build on it.
+MIT — see [`LICENSE`](./LICENSE).
+
+The upstream data belongs to Mattilsynet and is published under their own
+terms; the MIT license covers only the code in this repository.
