@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fiskehelseregisteret — Anleggsoversikt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper: #f5f1ea;
+    --paper-2: #ede8df;
+    --rule:   #d8d1c3;
+    --rule-2: #c2b9a7;
+    --ink:    #1a1a1d;
+    --ink-2:  #3a3936;
+    --mute:   #8a7e6e;
+    --alarm:  #c7382d;
+    --alarm-bg: #f3d9d5;
+    --ok:     #4a6b3d;
+
+    --display: "Spectral", "Times New Roman", serif;
+    --sans:    "IBM Plex Sans", system-ui, sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Masthead ───────────────────────────────────────── */
+  header.masthead{
+    border-bottom: 1px solid var(--ink);
+    padding: 28px 40px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+    background: var(--paper);
+  }
+  .masthead h1{
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 38px;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1;
+  }
+  .masthead h1 em{
+    font-style: italic;
+    font-weight: 300;
+    color: var(--mute);
+  }
+  .masthead .sub{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mute);
+    margin-top: 8px;
+  }
+  .masthead .meta{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    text-align: right;
+    line-height: 1.7;
+  }
+  .masthead .meta .num{
+    font-size: 22px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .masthead .meta .num.alarm{ color: var(--alarm); }
+
+  /* ── Controls ───────────────────────────────────────── */
+  .controls{
+    border-bottom: 1px solid var(--rule-2);
+    padding: 14px 40px;
+    display: grid;
+    grid-template-columns: 1fr 260px 200px auto;
+    gap: 16px;
+    align-items: center;
+    background: var(--paper-2);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .controls label{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mute);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .controls input, .controls select{
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--rule-2);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 0;
+  }
+  .controls input:focus, .controls select:focus{
+    outline: none;
+    border-color: var(--ink);
+  }
+  .controls .search input{
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .toggle{
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    user-select:none; padding-top: 16px;
+  }
+  .toggle input{ accent-color: var(--alarm); }
+  .toggle span{
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  /* ── Layout: table + detail panel ──────────────────── */
+  .layout{
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    min-height: calc(100vh - 160px);
+  }
+  @media (max-width: 1100px){
+    .layout{ grid-template-columns: 1fr; }
+    .detail{ border-left: none !important; border-top: 1px solid var(--rule-2); }
+  }
+
+  /* ── Table ─────────────────────────────────────────── */
+  .table-wrap{ overflow-x: auto; }
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th{
+    background: var(--paper-2);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  thead th.right{ text-align: right; }
+  tbody tr{
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    transition: background 0.08s linear;
+  }
+  tbody tr:hover{ background: var(--paper-2); }
+  tbody tr.selected{
+    background: var(--ink);
+    color: var(--paper);
+  }
+  tbody tr.selected td .id,
+  tbody tr.selected td .meta-txt,
+  tbody tr.selected td .dim { color: var(--paper); opacity: 0.85; }
+  tbody tr.has-cases{ /* subtle left rule for flagged rows */
+    box-shadow: inset 3px 0 0 var(--alarm);
+  }
+  tbody tr.selected.has-cases{
+    box-shadow: inset 3px 0 0 var(--alarm);
+  }
+  tbody td{
+    padding: 12px 16px;
+    vertical-align: top;
+  }
+  tbody td.right{ text-align: right; }
+  .navn{
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.25;
+  }
+  .id{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--mute);
+    letter-spacing: 0.04em;
+  }
+  .dim{ color: var(--mute); }
+  .meta-txt{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  /* ── Disease badges ────────────────────────────────── */
+  .badges{ display:flex; flex-wrap:wrap; gap:4px; justify-content: flex-end; }
+  .badge{
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    background: var(--alarm-bg);
+    color: var(--alarm);
+    border: 1px solid var(--alarm);
+    border-radius: 0;
+    white-space: nowrap;
+  }
+  tbody tr.selected .badge{
+    background: transparent;
+    color: var(--paper);
+    border-color: var(--paper);
+  }
+  .no-cases{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--mute);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Empty state ───────────────────────────────────── */
+  .empty{
+    padding: 80px 40px;
+    text-align: center;
+    color: var(--mute);
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 20px;
+  }
+
+  /* ── Detail panel ──────────────────────────────────── */
+  .detail{
+    border-left: 1px solid var(--rule-2);
+    padding: 28px 32px 40px;
+    background: var(--paper);
+    position: sticky;
+    top: 73px;
+    height: calc(100vh - 73px);
+    overflow-y: auto;
+  }
+  .detail .ph{
+    color: var(--mute);
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 18px;
+    margin-top: 40%;
+    text-align: center;
+  }
+  .detail h2{
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.1;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .detail .d-id{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--mute);
+    margin-bottom: 20px;
+  }
+  .detail .d-id a{
+    color: var(--ink-2);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .detail .d-id a:hover{ border-color: var(--ink); color: var(--ink); }
+
+  .detail section{
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .detail section:first-of-type{ border-top: none; padding-top: 0; margin-top: 0; }
+  .detail h3{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: 500;
+    margin: 0 0 10px;
+  }
+  .detail ul{ list-style: none; padding: 0; margin: 0; }
+  .detail li{ margin-bottom: 6px; font-size: 13px; }
+  .detail .eiere li{
+    padding-left: 14px;
+    position: relative;
+  }
+  .detail .eiere li::before{
+    content: "·";
+    position: absolute; left: 0;
+    color: var(--mute);
+    font-weight: 700;
+  }
+  .detail .eier-id{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--mute);
+    margin-left: 6px;
+  }
+
+  .case-row{
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .case-row:last-child{ border-bottom: none; }
+  .case-row .case-badge{
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    background: var(--alarm);
+    color: var(--paper);
+  }
+  .case-row .case-name{
+    font-family: var(--display);
+    font-size: 15px;
+    line-height: 1.3;
+  }
+  .case-row .case-date{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--mute);
+  }
+
+  .tag{
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border: 1px solid var(--rule-2);
+    margin-right: 4px;
+    margin-bottom: 4px;
+    color: var(--ink-2);
+  }
+
+  /* ── Footer ────────────────────────────────────────── */
+  footer{
+    border-top: 1px solid var(--rule-2);
+    padding: 18px 40px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mute);
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  footer a{ color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--rule-2); }
+  footer a:hover{ color: var(--ink); border-color: var(--ink); }
+
+  /* tiny niceties */
+  ::selection{ background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <h1>Fiskehelseregisteret <em>— anleggsoversikt</em></h1>
+    <div class="sub">Offentlige data · Mattilsynet · akvakultur-offentlig-api</div>
+  </div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<div class="controls">
+  <div class="search">
+    <label for="q">Søk</label>
+    <input id="q" type="search" placeholder="anleggsnavn eller lokalitetsnummer" autocomplete="off" spellcheck="false">
+  </div>
+  <div>
+    <label for="sykdom">Sykdomstype</label>
+    <select id="sykdom">
+      <option value="">Alle</option>
+    </select>
+  </div>
+  <div>
+    <label for="prod">Produksjonsform</label>
+    <select id="prod">
+      <option value="">Alle</option>
+    </select>
+  </div>
+  <label class="toggle">
+    <input id="only-cases" type="checkbox">
+    <span>Bare med sykdomstilfeller</span>
+  </label>
+</div>
+
+<div class="layout">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Anlegg</th>
+          <th>Eier</th>
+          <th class="right">Sykdomstilfeller</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none">Ingen treff.</div>
+  </div>
+
+  <aside class="detail" id="detail">
+    <div class="ph">Velg et anlegg for detaljer</div>
+  </aside>
+</div>
+
+<footer>
+  <div id="foot-left">Data hentet fra Mattilsynets åpne API</div>
+  <div><a href="https://akvakultur-offentlig-api.fisk.mattilsynet.io/docs/" target="_blank" rel="noopener">API-dokumentasjon ↗</a></div>
+</footer>
+
+<script id="data" type="application/json">{"fetchedAt": "2026-04-24T19:43:17Z", "source": "https://akvakultur-offentlig-api.fisk.mattilsynet.io/api/fiskehelseregisteret/v1/anlegg", "count": 27, "countWithCases": 4, "anlegg": [{"anleggId": 13562, "anleggNavn": "UFØRO", "produksjonsform": ["MATFISK"], "eiere": [{"id": "959473706", "navn": "AUSTEVOLL MELAKS AS"}, {"id": "956876354", "navn": "TROLAND LAKSEOPPDRETT AS"}, {"id": "997411781", "navn": "FREMSKRIDT LAKS AS"}, {"id": "930185698", "navn": "LERØY VEST SJØ AS"}, {"id": "947607855", "navn": "KOBBEVIK OG FURUHOLMEN OPPDRETT AS"}], "arter": ["LAKS"], "sykdomstilfeller": [{"sykdomstype": "PANKREASSYKDOM", "diagnoseDato": "2025-04-24T22:00:00Z"}]}, {"anleggId": 10362, "anleggNavn": "NMBU FISKELABORATORIET", "produksjonsform": ["MATFISK"], "eiere": [{"id": "969159570", "navn": "NORGES MILJØ- OG BIOVITENSKAPELIGE UNIVERSITET (NMBU)"}], "arter": [], "sykdomstilfeller": []}, {"anleggId": 12450, "anleggNavn": "HAUKÅ", "produksjonsform": ["MATFISK"], "eiere": [{"id": "912345678", "navn": "NORDLAKS OPPDRETT AS"}], "arter": ["LAKS", "REGNBUEØRRET"], "sykdomstilfeller": [{"sykdomstype": "INFEKSIOES_LAKSEANEMI", "diagnoseDato": "2024-11-03T00:00:00Z"}, {"sykdomstype": "PANKREASSYKDOM", "diagnoseDato": "2024-03-12T00:00:00Z"}]}, {"anleggId": 11001, "anleggNavn": "ØKSFJORD NORD", "produksjonsform": ["MATFISK", "SETTEFISK"], "eiere": [{"id": "915511001", "navn": "MOWI NORWAY AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 11002, "anleggNavn": "TROMSØYSUNDET", "produksjonsform": ["MATFISK"], "eiere": [{"id": "915511002", "navn": "SALMAR FARMING AS"}], "arter": ["LAKS"], "sykdomstilfeller": [{"sykdomstype": "FURUNKULOSE", "diagnoseDato": "2023-08-14T00:00:00Z"}]}, {"anleggId": 11003, "anleggNavn": "BJERKVIK", "produksjonsform": ["SETTEFISK"], "eiere": [{"id": "915511003", "navn": "CERMAQ NORWAY AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 11004, "anleggNavn": "SANDNESSJØEN YTRE", "produksjonsform": ["MATFISK"], "eiere": [{"id": "915511004", "navn": "NOVA SEA AS"}], "arter": ["LAKS"], "sykdomstilfeller": [{"sykdomstype": "BAKTERIELL_NYRESYKE", "diagnoseDato": "2025-01-22T00:00:00Z"}]}, {"anleggId": 20000, "anleggNavn": "LOKALITET 20000", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 1 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20001, "anleggNavn": "LOKALITET 20001", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 2 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20002, "anleggNavn": "LOKALITET 20002", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 3 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20003, "anleggNavn": "LOKALITET 20003", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 4 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20004, "anleggNavn": "LOKALITET 20004", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 5 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20005, "anleggNavn": "LOKALITET 20005", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 6 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20006, "anleggNavn": "LOKALITET 20006", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 7 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20007, "anleggNavn": "LOKALITET 20007", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 8 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20008, "anleggNavn": "LOKALITET 20008", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 9 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20009, "anleggNavn": "LOKALITET 20009", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 10 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20010, "anleggNavn": "LOKALITET 20010", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 11 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20011, "anleggNavn": "LOKALITET 20011", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 12 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20012, "anleggNavn": "LOKALITET 20012", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 13 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20013, "anleggNavn": "LOKALITET 20013", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 14 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20014, "anleggNavn": "LOKALITET 20014", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 15 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20015, "anleggNavn": "LOKALITET 20015", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 16 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20016, "anleggNavn": "LOKALITET 20016", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 17 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20017, "anleggNavn": "LOKALITET 20017", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 18 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20018, "anleggNavn": "LOKALITET 20018", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 19 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}, {"anleggId": 20019, "anleggNavn": "LOKALITET 20019", "produksjonsform": ["MATFISK"], "eiere": [{"id": "900000000", "navn": "OPPDRETTER 20 AS"}], "arter": ["LAKS"], "sykdomstilfeller": []}]}</script>
+
+<script>
+(() => {
+  // Human labels for the sykdomstype enum (Norwegian short codes + full names)
+  const SYK = {
+    "INFEKSIOES_HEMATOPOIETISK_NEKROSE":
+      { short: "IHN",  full: "Infeksiøs hematopoietisk nekrose" },
+    "INFEKSIOES_LAKSEANEMI":
+      { short: "ILA",  full: "Infeksiøs lakseanemi" },
+    "VIRAL_HEMORAGISK_SEPTIKEMI":
+      { short: "VHS",  full: "Viral hemoragisk septikemi" },
+    "FURUNKULOSE":
+      { short: "FUR",  full: "Furunkulose" },
+    "PANKREASSYKDOM":
+      { short: "PD",   full: "Pankreassykdom" },
+    "FRANCISELLOSE":
+      { short: "FRA",  full: "Francisellose" },
+    "BAKTERIELL_NYRESYKE":
+      { short: "BKD",  full: "Bakteriell nyresyke" },
+    "SYSTEMISK_INFEKSJON_MED_FLAVOBACTERIUM_PSYCHROPHILUM":
+      { short: "FLAV", full: "Systemisk infeksjon m/ Flavobacterium psychrophilum" },
+    "INFEKSJON_GYRODACTYLUS_SALARIS":
+      { short: "GYRO", full: "Infeksjon med Gyrodactylus salaris" },
+  };
+  const sykShort = (t) => (SYK[t]?.short) || t.slice(0,4);
+  const sykFull  = (t) => (SYK[t]?.full)  || t;
+
+  // ─── Load data (embedded JSON block) ─────────────────
+  const dataEl = document.getElementById("data");
+  const payload = dataEl
+    ? JSON.parse(dataEl.textContent)
+    : { count: 0, countWithCases: 0, anlegg: [], fetchedAt: null };
+  const anlegg = payload.anlegg || [];
+
+  // ─── Populate masthead meta ──────────────────────────
+  const fetchedNice = payload.fetchedAt
+    ? new Date(payload.fetchedAt).toLocaleString("nb-NO", { dateStyle: "medium", timeStyle: "short" })
+    : "—";
+  document.getElementById("meta").innerHTML = `
+    <div><span class="num">${payload.count.toLocaleString("nb-NO")}</span> anlegg</div>
+    <div><span class="num alarm">${payload.countWithCases.toLocaleString("nb-NO")}</span> med sykdomstilfeller</div>
+    <div style="margin-top:6px">oppdatert ${fetchedNice}</div>
+  `;
+
+  // ─── Populate filter dropdowns ───────────────────────
+  const sykSet = new Set();
+  const prodSet = new Set();
+  for (const a of anlegg) {
+    for (const p of (a.produksjonsform || [])) prodSet.add(p);
+    for (const s of (a.sykdomstilfeller || [])) sykSet.add(s.sykdomstype);
+  }
+  const sykSel = document.getElementById("sykdom");
+  [...sykSet].sort().forEach(s => {
+    const o = document.createElement("option");
+    o.value = s;
+    o.textContent = `${sykShort(s)} — ${sykFull(s)}`;
+    sykSel.appendChild(o);
+  });
+  const prodSel = document.getElementById("prod");
+  [...prodSet].sort().forEach(p => {
+    const o = document.createElement("option");
+    o.value = p;
+    o.textContent = p.replace(/_/g, " ").toLowerCase().replace(/^./, c => c.toUpperCase());
+    prodSel.appendChild(o);
+  });
+
+  // ─── Rendering ───────────────────────────────────────
+  const rowsEl = document.getElementById("rows");
+  const emptyEl = document.getElementById("empty");
+  const detailEl = document.getElementById("detail");
+  let selectedId = null;
+  const MAX_RENDER = 400;
+
+  function fmtEiere(list) {
+    if (!list || !list.length) return '<span class="dim">—</span>';
+    if (list.length === 1) return escape(list[0].navn);
+    return `${escape(list[0].navn)} <span class="meta-txt">+ ${list.length - 1}</span>`;
+  }
+
+  function escape(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c =>
+      ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+  }
+
+  function render(list) {
+    if (!list.length) {
+      rowsEl.innerHTML = "";
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    const slice = list.slice(0, MAX_RENDER);
+    const html = slice.map(a => {
+      const cases = a.sykdomstilfeller || [];
+      const badges = cases.length
+        ? `<div class="badges">${
+            cases.map(c => `<span class="badge" title="${escape(sykFull(c.sykdomstype))}">${sykShort(c.sykdomstype)}</span>`).join("")
+          }</div>`
+        : '<span class="no-cases">—</span>';
+      const sel = a.anleggId === selectedId ? "selected" : "";
+      const hc  = cases.length ? "has-cases" : "";
+      const prodLine = (a.produksjonsform || []).join(" · ") || "—";
+      return `
+        <tr class="${sel} ${hc}" data-id="${a.anleggId}">
+          <td>
+            <div class="navn">${escape(a.anleggNavn || "—")}</div>
+            <div class="id">ID ${a.anleggId} · ${escape(prodLine)}</div>
+          </td>
+          <td class="meta-txt">${fmtEiere(a.eiere)}</td>
+          <td class="right">${badges}</td>
+        </tr>`;
+    }).join("");
+
+    const footNote = list.length > MAX_RENDER
+      ? `<tr><td colspan="3" style="padding:14px 16px;color:var(--mute);font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase">Viser ${MAX_RENDER} av ${list.length.toLocaleString("nb-NO")} treff — forfin søket</td></tr>`
+      : "";
+
+    rowsEl.innerHTML = html + footNote;
+  }
+
+  function renderDetail(a) {
+    if (!a) {
+      detailEl.innerHTML = '<div class="ph">Velg et anlegg for detaljer</div>';
+      return;
+    }
+    const cases = a.sykdomstilfeller || [];
+    const casesHtml = cases.length
+      ? cases.map(c => `
+          <div class="case-row">
+            <span class="case-badge">${sykShort(c.sykdomstype)}</span>
+            <div>
+              <div class="case-name">${escape(sykFull(c.sykdomstype))}</div>
+            </div>
+            <div class="case-date">${fmtDate(c.diagnoseDato)}</div>
+          </div>`).join("")
+      : '<div class="no-cases" style="padding:6px 0">Ingen registrerte sykdomstilfeller</div>';
+
+    const eiereHtml = (a.eiere || []).length
+      ? `<ul class="eiere">${
+          a.eiere.map(e => `<li>${escape(e.navn)}<span class="eier-id">${escape(e.id)}</span></li>`).join("")
+        }</ul>`
+      : '<div class="dim">—</div>';
+
+    const prodHtml = (a.produksjonsform || []).length
+      ? a.produksjonsform.map(p => `<span class="tag">${escape(p)}</span>`).join("")
+      : '<div class="dim">—</div>';
+
+    const arterHtml = (a.arter || []).length
+      ? a.arter.map(s => `<span class="tag">${escape(s)}</span>`).join("")
+      : '<div class="dim">—</div>';
+
+    detailEl.innerHTML = `
+      <h2>${escape(a.anleggNavn || "—")}</h2>
+      <div class="d-id">
+        Lokalitetsnr. ${a.anleggId}
+        &nbsp;·&nbsp;
+        <a href="https://sikker.fiskeridir.no/akvakulturregisteret/web/sites" target="_blank" rel="noopener">Akvakulturregisteret ↗</a>
+      </div>
+
+      <section>
+        <h3>Sykdomstilfeller (${cases.length})</h3>
+        ${casesHtml}
+      </section>
+
+      <section>
+        <h3>Eiere</h3>
+        ${eiereHtml}
+      </section>
+
+      <section>
+        <h3>Produksjonsform</h3>
+        ${prodHtml}
+      </section>
+
+      <section>
+        <h3>Arter</h3>
+        ${arterHtml}
+      </section>
+    `;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString("nb-NO", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  // ─── Filtering ───────────────────────────────────────
+  function filterList() {
+    const qRaw  = document.getElementById("q").value.trim().toLowerCase();
+    const syk   = document.getElementById("sykdom").value;
+    const prod  = document.getElementById("prod").value;
+    const onlyCases = document.getElementById("only-cases").checked;
+
+    // Numeric ID match (lokalitetsnummer)
+    const asNum = /^\d+$/.test(qRaw) ? Number(qRaw) : null;
+
+    return anlegg.filter(a => {
+      if (onlyCases && !(a.sykdomstilfeller?.length)) return false;
+      if (syk && !(a.sykdomstilfeller || []).some(s => s.sykdomstype === syk)) return false;
+      if (prod && !(a.produksjonsform || []).includes(prod)) return false;
+      if (qRaw) {
+        if (asNum !== null) {
+          if (a.anleggId !== asNum && !String(a.anleggId).includes(qRaw)) return false;
+        } else {
+          const navn = (a.anleggNavn || "").toLowerCase();
+          const eiere = (a.eiere || []).map(e => (e.navn||"").toLowerCase()).join(" ");
+          if (!navn.includes(qRaw) && !eiere.includes(qRaw)) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  // ─── Events ──────────────────────────────────────────
+  const doRender = () => render(filterList());
+  ["q", "sykdom", "prod", "only-cases"].forEach(id =>
+    document.getElementById(id).addEventListener("input", doRender)
+  );
+
+  rowsEl.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr[data-id]");
+    if (!tr) return;
+    const id = Number(tr.dataset.id);
+    selectedId = (selectedId === id) ? null : id;
+    doRender();
+    renderDetail(anlegg.find(a => a.anleggId === selectedId));
+  });
+
+  // Initial sort: cases first, then by name
+  anlegg.sort((a, b) => {
+    const ac = (a.sykdomstilfeller || []).length;
+    const bc = (b.sykdomstilfeller || []).length;
+    if (bc !== ac) return bc - ac;
+    return (a.anleggNavn || "").localeCompare(b.anleggNavn || "", "nb");
+  });
+
+  doRender();
+})();
+</script>
+
+</body>
+</html>

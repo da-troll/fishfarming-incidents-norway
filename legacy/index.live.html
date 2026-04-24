@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fiskehelseregisteret — Anleggsoversikt (live)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#f5f1ea; --paper-2:#ede8df; --rule:#d8d1c3; --rule-2:#c2b9a7;
+    --ink:#1a1a1d; --ink-2:#3a3936; --mute:#8a7e6e;
+    --alarm:#c7382d; --alarm-bg:#f3d9d5; --ok:#4a6b3d;
+    --display:"Spectral","Times New Roman",serif;
+    --sans:"IBM Plex Sans",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+
+  header.masthead{border-bottom:1px solid var(--ink);padding:28px 40px 18px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;background:var(--paper)}
+  .masthead h1{font-family:var(--display);font-weight:400;font-size:38px;letter-spacing:-.01em;margin:0;line-height:1}
+  .masthead h1 em{font-style:italic;font-weight:300;color:var(--mute)}
+  .masthead .sub{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-top:8px}
+  .masthead .meta{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-align:right;line-height:1.7}
+  .masthead .meta .num{font-size:22px;color:var(--ink);font-weight:500;letter-spacing:-.02em}
+  .masthead .meta .num.alarm{color:var(--alarm)}
+
+  .controls{border-bottom:1px solid var(--rule-2);padding:14px 40px;display:grid;grid-template-columns:1fr 260px 200px auto;gap:16px;align-items:center;background:var(--paper-2);position:sticky;top:0;z-index:5}
+  .controls label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);display:block;margin-bottom:4px}
+  .controls input,.controls select{width:100%;font-family:var(--sans);font-size:14px;padding:8px 10px;border:1px solid var(--rule-2);background:var(--paper);color:var(--ink);border-radius:0}
+  .controls input:focus,.controls select:focus{outline:none;border-color:var(--ink)}
+  .controls .search input{font-family:var(--mono);font-size:13px}
+  .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding-top:16px}
+  .toggle input{accent-color:var(--alarm)}
+  .toggle span{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+
+  .load-bar{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:8px 40px;display:flex;justify-content:space-between;gap:20px}
+  .load-bar.done{background:var(--paper-2);color:var(--mute);border-bottom:1px solid var(--rule-2)}
+  .load-bar.err{background:var(--alarm);color:var(--paper)}
+
+  .layout{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 200px)}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}.detail{border-left:none!important;border-top:1px solid var(--rule-2)}}
+
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:var(--paper-2);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:500;text-align:left;padding:10px 16px;border-bottom:1px solid var(--rule-2)}
+  thead th.right{text-align:right}
+  tbody tr{border-bottom:1px solid var(--rule);cursor:pointer;transition:background .08s linear}
+  tbody tr:hover{background:var(--paper-2)}
+  tbody tr.selected{background:var(--ink);color:var(--paper)}
+  tbody tr.selected td .id,tbody tr.selected td .meta-txt,tbody tr.selected td .dim{color:var(--paper);opacity:.85}
+  tbody tr.has-cases{box-shadow:inset 3px 0 0 var(--alarm)}
+  tbody tr.selected.has-cases{box-shadow:inset 3px 0 0 var(--alarm)}
+  tbody td{padding:12px 16px;vertical-align:top}
+  tbody td.right{text-align:right}
+  .navn{font-family:var(--display);font-size:17px;font-weight:400;letter-spacing:-.005em;line-height:1.25}
+  .id{font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.04em}
+  .dim{color:var(--mute)}
+  .meta-txt{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+
+  .badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+  .badge{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;padding:3px 7px;background:var(--alarm-bg);color:var(--alarm);border:1px solid var(--alarm);border-radius:0;white-space:nowrap}
+  tbody tr.selected .badge{background:transparent;color:var(--paper);border-color:var(--paper)}
+  .no-cases{font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.08em}
+
+  .empty{padding:80px 40px;text-align:center;color:var(--mute);font-family:var(--display);font-style:italic;font-size:20px}
+
+  .detail{border-left:1px solid var(--rule-2);padding:28px 32px 40px;background:var(--paper);position:sticky;top:73px;height:calc(100vh - 73px);overflow-y:auto}
+  .detail .ph{color:var(--mute);font-family:var(--display);font-style:italic;font-size:18px;margin-top:40%;text-align:center}
+  .detail h2{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;margin:0 0 4px;letter-spacing:-.01em}
+  .detail .d-id{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--mute);margin-bottom:20px}
+  .detail .d-id a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+  .detail .d-id a:hover{border-color:var(--ink);color:var(--ink)}
+  .detail section{margin-top:22px;padding-top:18px;border-top:1px solid var(--rule)}
+  .detail section:first-of-type{border-top:none;padding-top:0;margin-top:0}
+  .detail h3{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:500;margin:0 0 10px}
+  .detail ul{list-style:none;padding:0;margin:0}
+  .detail li{margin-bottom:6px;font-size:13px}
+  .detail .eiere li{padding-left:14px;position:relative}
+  .detail .eiere li::before{content:"·";position:absolute;left:0;color:var(--mute);font-weight:700}
+  .detail .eier-id{font-family:var(--mono);font-size:10px;color:var(--mute);margin-left:6px}
+
+  .case-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--rule)}
+  .case-row:last-child{border-bottom:none}
+  .case-row .case-badge{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;padding:3px 7px;background:var(--alarm);color:var(--paper)}
+  .case-row .case-name{font-family:var(--display);font-size:15px;line-height:1.3}
+  .case-row .case-date{font-family:var(--mono);font-size:11px;color:var(--mute)}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:2px 7px;border:1px solid var(--rule-2);margin-right:4px;margin-bottom:4px;color:var(--ink-2)}
+
+  footer{border-top:1px solid var(--rule-2);padding:18px 40px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:flex;justify-content:space-between;gap:20px}
+  footer a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+  footer a:hover{color:var(--ink);border-color:var(--ink)}
+  ::selection{background:var(--ink);color:var(--paper)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <h1>Fiskehelseregisteret <em>— anleggsoversikt</em></h1>
+    <div class="sub">Live · via lokal proxy · Mattilsynet</div>
+  </div>
+  <div class="meta" id="meta">
+    <div><span class="num" id="m-total">—</span> anlegg</div>
+    <div><span class="num alarm" id="m-cases">—</span> med sykdomstilfeller</div>
+    <div style="margin-top:6px" id="m-time">laster …</div>
+  </div>
+</header>
+
+<div id="load-bar" class="load-bar">
+  <span id="load-status">Kobler til proxy …</span>
+  <span id="load-count"></span>
+</div>
+
+<div class="controls">
+  <div class="search">
+    <label for="q">Søk</label>
+    <input id="q" type="search" placeholder="anleggsnavn eller lokalitetsnummer" autocomplete="off" spellcheck="false">
+  </div>
+  <div>
+    <label for="sykdom">Sykdomstype</label>
+    <select id="sykdom"><option value="">Alle</option></select>
+  </div>
+  <div>
+    <label for="prod">Produksjonsform</label>
+    <select id="prod"><option value="">Alle</option></select>
+  </div>
+  <label class="toggle">
+    <input id="only-cases" type="checkbox">
+    <span>Bare med sykdomstilfeller</span>
+  </label>
+</div>
+
+<div class="layout">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Anlegg</th><th>Eier</th><th class="right">Sykdomstilfeller</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none">Ingen treff.</div>
+  </div>
+  <aside class="detail" id="detail">
+    <div class="ph">Velg et anlegg for detaljer</div>
+  </aside>
+</div>
+
+<footer>
+  <div>Proxy: <span id="proxy-url">http://localhost:8787</span></div>
+  <div><a href="https://akvakultur-offentlig-api.fisk.mattilsynet.io/docs/" target="_blank" rel="noopener">API-dokumentasjon ↗</a></div>
+</footer>
+
+<script>
+(() => {
+  const PROXY = "http://localhost:8787";
+  const PAGE_SIZE = 500;
+  document.getElementById("proxy-url").textContent = PROXY;
+
+  const SYK = {
+    "INFEKSIOES_HEMATOPOIETISK_NEKROSE":{short:"IHN",full:"Infeksiøs hematopoietisk nekrose"},
+    "INFEKSIOES_LAKSEANEMI":{short:"ILA",full:"Infeksiøs lakseanemi"},
+    "VIRAL_HEMORAGISK_SEPTIKEMI":{short:"VHS",full:"Viral hemoragisk septikemi"},
+    "FURUNKULOSE":{short:"FUR",full:"Furunkulose"},
+    "PANKREASSYKDOM":{short:"PD",full:"Pankreassykdom"},
+    "FRANCISELLOSE":{short:"FRA",full:"Francisellose"},
+    "BAKTERIELL_NYRESYKE":{short:"BKD",full:"Bakteriell nyresyke"},
+    "SYSTEMISK_INFEKSJON_MED_FLAVOBACTERIUM_PSYCHROPHILUM":{short:"FLAV",full:"Systemisk infeksjon m/ Flavobacterium psychrophilum"},
+    "INFEKSJON_GYRODACTYLUS_SALARIS":{short:"GYRO",full:"Infeksjon med Gyrodactylus salaris"},
+  };
+  const sykShort = t => (SYK[t]?.short)||t.slice(0,4);
+  const sykFull  = t => (SYK[t]?.full)||t;
+
+  const anlegg = [];
+  let selectedId = null;
+  const MAX_RENDER = 400;
+
+  function escape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+  function fmtDate(iso){if(!iso)return"—";const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString("nb-NO",{year:"numeric",month:"short",day:"numeric"})}
+  function fmtEiere(list){if(!list||!list.length)return'<span class="dim">—</span>';if(list.length===1)return escape(list[0].navn);return `${escape(list[0].navn)} <span class="meta-txt">+ ${list.length-1}</span>`}
+
+  const rowsEl = document.getElementById("rows");
+  const emptyEl = document.getElementById("empty");
+  const detailEl = document.getElementById("detail");
+  const sykSel = document.getElementById("sykdom");
+  const prodSel = document.getElementById("prod");
+  const loadBar = document.getElementById("load-bar");
+  const loadStatus = document.getElementById("load-status");
+  const loadCount = document.getElementById("load-count");
+  const mTotal = document.getElementById("m-total");
+  const mCases = document.getElementById("m-cases");
+  const mTime  = document.getElementById("m-time");
+
+  function updateFilters(){
+    const existingSyk = new Set([...sykSel.options].map(o=>o.value));
+    const existingProd = new Set([...prodSel.options].map(o=>o.value));
+    for (const a of anlegg){
+      for (const s of (a.sykdomstilfeller||[])){
+        if(!existingSyk.has(s.sykdomstype)){
+          const o=document.createElement("option");
+          o.value=s.sykdomstype;
+          o.textContent=`${sykShort(s.sykdomstype)} — ${sykFull(s.sykdomstype)}`;
+          sykSel.appendChild(o); existingSyk.add(s.sykdomstype);
+        }
+      }
+      for (const p of (a.produksjonsform||[])){
+        if(!existingProd.has(p)){
+          const o=document.createElement("option");
+          o.value=p;
+          o.textContent=p.replace(/_/g," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
+          prodSel.appendChild(o); existingProd.add(p);
+        }
+      }
+    }
+  }
+
+  function filterList(){
+    const qRaw=document.getElementById("q").value.trim().toLowerCase();
+    const syk=sykSel.value, prod=prodSel.value;
+    const onlyCases=document.getElementById("only-cases").checked;
+    const asNum=/^\d+$/.test(qRaw)?Number(qRaw):null;
+    return anlegg.filter(a=>{
+      if(onlyCases&&!(a.sykdomstilfeller?.length))return false;
+      if(syk&&!(a.sykdomstilfeller||[]).some(s=>s.sykdomstype===syk))return false;
+      if(prod&&!(a.produksjonsform||[]).includes(prod))return false;
+      if(qRaw){
+        if(asNum!==null){if(a.anleggId!==asNum&&!String(a.anleggId).includes(qRaw))return false}
+        else{
+          const navn=(a.anleggNavn||"").toLowerCase();
+          const eiere=(a.eiere||[]).map(e=>(e.navn||"").toLowerCase()).join(" ");
+          if(!navn.includes(qRaw)&&!eiere.includes(qRaw))return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  function render(){
+    const list=filterList();
+    if(!list.length){rowsEl.innerHTML="";emptyEl.style.display="block";return}
+    emptyEl.style.display="none";
+    const slice=list.slice(0,MAX_RENDER);
+    const html=slice.map(a=>{
+      const cases=a.sykdomstilfeller||[];
+      const badges=cases.length?`<div class="badges">${cases.map(c=>`<span class="badge" title="${escape(sykFull(c.sykdomstype))}">${sykShort(c.sykdomstype)}</span>`).join("")}</div>`:'<span class="no-cases">—</span>';
+      const sel=a.anleggId===selectedId?"selected":"";
+      const hc=cases.length?"has-cases":"";
+      const prodLine=(a.produksjonsform||[]).join(" · ")||"—";
+      return `<tr class="${sel} ${hc}" data-id="${a.anleggId}"><td><div class="navn">${escape(a.anleggNavn||"—")}</div><div class="id">ID ${a.anleggId} · ${escape(prodLine)}</div></td><td class="meta-txt">${fmtEiere(a.eiere)}</td><td class="right">${badges}</td></tr>`;
+    }).join("");
+    const footNote=list.length>MAX_RENDER?`<tr><td colspan="3" style="padding:14px 16px;color:var(--mute);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase">Viser ${MAX_RENDER} av ${list.length.toLocaleString("nb-NO")} treff — forfin søket</td></tr>`:"";
+    rowsEl.innerHTML=html+footNote;
+  }
+
+  function renderDetail(a){
+    if(!a){detailEl.innerHTML='<div class="ph">Velg et anlegg for detaljer</div>';return}
+    const cases=a.sykdomstilfeller||[];
+    const casesHtml=cases.length?cases.map(c=>`<div class="case-row"><span class="case-badge">${sykShort(c.sykdomstype)}</span><div><div class="case-name">${escape(sykFull(c.sykdomstype))}</div></div><div class="case-date">${fmtDate(c.diagnoseDato)}</div></div>`).join(""):'<div class="no-cases" style="padding:6px 0">Ingen registrerte sykdomstilfeller</div>';
+    const eiereHtml=(a.eiere||[]).length?`<ul class="eiere">${a.eiere.map(e=>`<li>${escape(e.navn)}<span class="eier-id">${escape(e.id)}</span></li>`).join("")}</ul>`:'<div class="dim">—</div>';
+    const prodHtml=(a.produksjonsform||[]).length?a.produksjonsform.map(p=>`<span class="tag">${escape(p)}</span>`).join(""):'<div class="dim">—</div>';
+    const arterHtml=(a.arter||[]).length?a.arter.map(s=>`<span class="tag">${escape(s)}</span>`).join(""):'<div class="dim">—</div>';
+    detailEl.innerHTML=`<h2>${escape(a.anleggNavn||"—")}</h2><div class="d-id">Lokalitetsnr. ${a.anleggId} &nbsp;·&nbsp; <a href="https://sikker.fiskeridir.no/akvakulturregisteret/web/sites" target="_blank" rel="noopener">Akvakulturregisteret ↗</a></div><section><h3>Sykdomstilfeller (${cases.length})</h3>${casesHtml}</section><section><h3>Eiere</h3>${eiereHtml}</section><section><h3>Produksjonsform</h3>${prodHtml}</section><section><h3>Arter</h3>${arterHtml}</section>`;
+  }
+
+  function updateMeta(done){
+    const withCases = anlegg.reduce((n,a)=>n+((a.sykdomstilfeller||[]).length?1:0),0);
+    mTotal.textContent = anlegg.length.toLocaleString("nb-NO");
+    mCases.textContent = withCases.toLocaleString("nb-NO");
+    mTime.textContent = done ? `ferdig kl. ${new Date().toLocaleTimeString("nb-NO")}` : "laster …";
+  }
+
+  ["q","sykdom","prod","only-cases"].forEach(id=>
+    document.getElementById(id).addEventListener("input",render));
+
+  rowsEl.addEventListener("click",e=>{
+    const tr=e.target.closest("tr[data-id]");if(!tr)return;
+    const id=Number(tr.dataset.id);
+    selectedId=(selectedId===id)?null:id;
+    render();
+    renderDetail(anlegg.find(a=>a.anleggId===selectedId));
+  });
+
+  async function loadAll(){
+    loadStatus.textContent = "Laster anlegg fra proxy …";
+    let offset = 0, page = 0;
+    try {
+      for(;;){
+        page++;
+        const url = `${PROXY}/api/fiskehelseregisteret/v1/anlegg?limit=${PAGE_SIZE}&offset=${offset}`;
+        loadCount.textContent = `side ${page} · offset ${offset}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const batch = await res.json();
+        if(!batch.length) break;
+        for(const a of batch) anlegg.push(a);
+        // sort cases-first on every batch so the user sees the signal first
+        anlegg.sort((a,b)=>{const ac=(a.sykdomstilfeller||[]).length,bc=(b.sykdomstilfeller||[]).length;if(bc!==ac)return bc-ac;return(a.anleggNavn||"").localeCompare(b.anleggNavn||"","nb")});
+        updateFilters();
+        render();
+        updateMeta(false);
+        if(batch.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
+      loadBar.classList.add("done");
+      loadStatus.textContent = `Ferdig — ${anlegg.length.toLocaleString("nb-NO")} anlegg lastet`;
+      loadCount.textContent = "";
+      updateMeta(true);
+    } catch (err) {
+      loadBar.classList.add("err");
+      loadStatus.textContent = `Feil: ${err.message} — sjekk at proxy.js kjører på ${PROXY}`;
+      loadCount.textContent = "";
+    }
+  }
+
+  loadAll();
+})();
+</script>
+
+</body>
+</html>
