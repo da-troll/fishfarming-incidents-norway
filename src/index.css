@@ -919,6 +919,7 @@ tbody tr.selected {
   color: var(--paper);
 }
 tbody tr.selected td .id,
+tbody tr.selected td.meta-txt,
 tbody tr.selected td .meta-txt,
 tbody tr.selected td .dim {
   color: var(--paper);
