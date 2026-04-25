@@ -35,8 +35,10 @@ export function DetailPanel({ anlegg, onClose }: Props) {
 
   if (!anlegg) {
     return (
-      <aside className="detail" aria-hidden={!isOpen}>
-        <div className="ph">Velg et anlegg for detaljer</div>
+      <aside className="detail detail-rail" aria-hidden={!isOpen}>
+        <div className="detail-rail-hint" aria-hidden>
+          <span>Velg anlegg →</span>
+        </div>
       </aside>
     );
   }

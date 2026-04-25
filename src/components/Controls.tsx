@@ -7,7 +7,7 @@ import { STATUS_LABELS } from "../lib/cases";
 import { artLabel } from "../lib/arter";
 import { MultiSelect } from "./MultiSelect";
 import { SingleSelect } from "./SingleSelect";
-import { DatePicker } from "./DatePicker";
+import { DateRangePicker } from "./DateRangePicker";
 
 const SORT_KEYS: SortKey[] = ["cases-desc", "name-asc", "name-desc", "date-desc", "id-asc"];
 const SORT_OPTIONS = SORT_KEYS.map((k) => ({ value: k, label: SORT_LABELS[k] }));
@@ -77,21 +77,6 @@ export function Controls({
 
   const advancedCount = countAdvancedFilters(criteria);
 
-  const setPreset = (days: number | "year") => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const til = today.toISOString().slice(0, 10);
-    let fra: string;
-    if (days === "year") {
-      fra = `${today.getFullYear()}-01-01`;
-    } else {
-      const d = new Date(today);
-      d.setDate(d.getDate() - days);
-      fra = d.toISOString().slice(0, 10);
-    }
-    onChange({ ...criteria, diagnoseDatoFra: fra, diagnoseDatoTil: til });
-  };
-
   const exportLabel =
     selectedCount > 0
       ? `Eksporter alle filtrerte (${resultCount})`
@@ -120,12 +105,6 @@ export function Controls({
             onChange({ ...criteria, sykdomstyper: next as Sykdomstype[] })
           }
         />
-        <MultiSelect
-          label="Produksjonsform"
-          options={produksjonsformer}
-          selected={criteria.produksjonsformer}
-          onChange={(next) => onChange({ ...criteria, produksjonsformer: next })}
-        />
         <button
           type="button"
           className={"filter-pill" + (criteria.onlyWithCases ? " active" : "")}
@@ -135,6 +114,12 @@ export function Controls({
           <span className="filter-pill-dot" aria-hidden />
           Bare med tilfeller
         </button>
+        <MultiSelect
+          label="Produksjonsform"
+          options={produksjonsformer}
+          selected={criteria.produksjonsformer}
+          onChange={(next) => onChange({ ...criteria, produksjonsformer: next })}
+        />
         <button
           type="button"
           className={
@@ -189,48 +174,13 @@ export function Controls({
           )}
           <div className="date-range">
             <label>Diagnosedato</label>
-            <div className="date-range-row">
-              <div className="date-range-inputs">
-                <DatePicker
-                  value={criteria.diagnoseDatoFra}
-                  onChange={(v) => onChange({ ...criteria, diagnoseDatoFra: v })}
-                  pairValue={criteria.diagnoseDatoTil}
-                  max={criteria.diagnoseDatoTil ?? undefined}
-                  placeholder="Fra dato"
-                  ariaLabel="Fra dato"
-                />
-                <span className="date-range-arrow">→</span>
-                <DatePicker
-                  value={criteria.diagnoseDatoTil}
-                  onChange={(v) => onChange({ ...criteria, diagnoseDatoTil: v })}
-                  pairValue={criteria.diagnoseDatoFra}
-                  min={criteria.diagnoseDatoFra ?? undefined}
-                  placeholder="Til dato"
-                  ariaLabel="Til dato"
-                />
-              </div>
-              <div className="date-presets">
-                <button type="button" className="preset" onClick={() => setPreset(30)}>
-                  30 dager
-                </button>
-                <button type="button" className="preset" onClick={() => setPreset(365)}>
-                  12 mnd
-                </button>
-                <button type="button" className="preset" onClick={() => setPreset("year")}>
-                  I år
-                </button>
-                <button
-                  type="button"
-                  className="preset preset-clear"
-                  onClick={() =>
-                    onChange({ ...criteria, diagnoseDatoFra: null, diagnoseDatoTil: null })
-                  }
-                  disabled={!criteria.diagnoseDatoFra && !criteria.diagnoseDatoTil}
-                >
-                  Tøm
-                </button>
-              </div>
-            </div>
+            <DateRangePicker
+              fra={criteria.diagnoseDatoFra}
+              til={criteria.diagnoseDatoTil}
+              onChange={({ fra, til }) =>
+                onChange({ ...criteria, diagnoseDatoFra: fra, diagnoseDatoTil: til })
+              }
+            />
           </div>
         </div>
       )}

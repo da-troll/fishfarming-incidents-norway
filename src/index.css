@@ -145,6 +145,17 @@ header.masthead {
   margin-left: 4px;
   font-size: 9px;
 }
+/* Override the .filter-pill.active red — the advanced toggle is a panel
+ * expansion, not a danger/disease signal. Neutral active state keeps red
+ * reserved for disease semantics. */
+.controls .ctrl-advanced.active {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.controls .ctrl-advanced.active:hover {
+  background: var(--paper-2);
+}
 .controls .ctrl-export {
   /* visually distinct from filter toggles */
   background: var(--ink);
@@ -418,20 +429,135 @@ header.masthead {
   gap: 4px;
   min-width: 0;
 }
-.date-range-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+
+/* =========================================================================
+   DateRangePicker — single-trigger popover with dual-month + presets
+   ========================================================================= */
+.dpr-wrap {
+  position: relative;
+  min-width: 0;
 }
-.date-range-inputs {
+.dpr-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  background: var(--paper);
+  border: 1px solid var(--ink-2);
+  z-index: 30;
+  box-shadow: 0 12px 30px rgba(26, 26, 29, 0.22);
 }
-.date-range-inputs .dp-wrap {
-  width: 160px;
-  flex-shrink: 0;
+.dpr-presets {
+  border-right: 1px solid var(--rule);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  background: var(--paper-2);
+}
+.dpr-presets-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.dpr-presets ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dpr-presets li {
+  margin: 2px 0;
+}
+.dpr-preset {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 7px 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dpr-preset:hover:not(:disabled) {
+  background: var(--paper);
+  border-color: var(--rule-2);
+}
+.dpr-preset-active {
+  background: var(--paper);
+  border-color: var(--ink);
+  font-weight: 500;
+}
+.dpr-preset-clear {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dpr-preset-clear:disabled {
+  color: var(--mute);
+  cursor: not-allowed;
+}
+.dpr-stage-hint {
+  margin-top: auto;
+  padding-top: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-warm);
+}
+.dpr-cal {
+  padding: 12px;
+}
+.dpr-months {
+  display: flex;
+  gap: 18px;
+}
+.dpr-month {
+  width: 232px;
+}
+.dpr-month-head {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.dpr-month-title {
+  text-align: center;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-warm);
+  letter-spacing: -0.005em;
+}
+.dpr-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.dpr-cal .dp-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.dpr-cal .dp-weekdays > span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
+  text-align: center;
+  padding: 4px 0;
 }
 
 /* =========================================================================
@@ -871,10 +997,17 @@ tbody tr.checked.has-cases {
   display: grid;
   grid-template-columns: 1fr 420px;
   min-height: calc(100vh - 200px);
+  transition: grid-template-columns 0.18s ease;
+}
+.layout:has(.detail-rail) {
+  grid-template-columns: 1fr 72px;
 }
 
 .table-wrap {
-  overflow-x: auto;
+  /* No overflow:auto — that would create a scroll container and break
+   * viewport-relative sticky thead. Table uses fixed layout with defined
+   * column widths; horizontal overflow is handled by the responsive
+   * column-hide rules instead. */
 }
 table {
   width: 100%;
@@ -896,6 +1029,11 @@ thead th {
   text-align: left;
   padding: 10px 16px;
   border-bottom: 1px solid var(--rule-2);
+  position: sticky;
+  /* Slightly under the .controls bar (~67px) — small overlap masked by the
+   * thead's own background so columns don't show through above. */
+  top: 67px;
+  z-index: 3;
 }
 thead th:first-child {
   padding-left: 40px;
@@ -1023,13 +1161,22 @@ tbody tr.selected .badge {
   height: calc(100vh - 73px);
   overflow-y: auto;
 }
-.detail .ph {
+.detail-rail {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detail-rail-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--mute);
-  font-family: var(--display);
-  font-style: italic;
-  font-size: 17px;
-  margin-top: 25vh;
-  text-align: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  user-select: none;
 }
 .detail h2 {
   font-family: var(--display);
