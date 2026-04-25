@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import type { Anlegg } from "../types";
 import { DiseaseBadge } from "./DiseaseBadge";
 import { primaryEier } from "../lib/format";
@@ -5,18 +6,42 @@ import { primaryEier } from "../lib/format";
 interface Props {
   anlegg: Anlegg;
   selected: boolean;
+  checked: boolean;
   onSelect: (id: number) => void;
+  onToggleCheck: (id: number, shift: boolean) => void;
 }
 
-export function AnleggRow({ anlegg, selected, onSelect }: Props) {
+export function AnleggRow({ anlegg, selected, checked, onSelect, onToggleCheck }: Props) {
   const cases = anlegg.sykdomstilfeller ?? [];
   const hasCases = cases.length > 0;
-  const cls = [selected ? "selected" : "", hasCases ? "has-cases" : ""].filter(Boolean).join(" ");
+  const cls = [
+    selected ? "selected" : "",
+    hasCases ? "has-cases" : "",
+    checked ? "checked" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const prodLine = (anlegg.produksjonsform ?? []).join(" · ") || "—";
   const eier = primaryEier(anlegg.eiere);
 
+  const handleCheckClick = (e: MouseEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    onToggleCheck(anlegg.anleggId, e.shiftKey);
+  };
+
   return (
     <tr className={cls} onClick={() => onSelect(anlegg.anleggId)}>
+      <td className="col-check" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          aria-label={`Velg ${anlegg.anleggNavn || anlegg.anleggId}`}
+          checked={checked}
+          onClick={handleCheckClick}
+          onChange={() => {
+            /* handled in onClick to capture shift */
+          }}
+        />
+      </td>
       <td>
         <div className="navn">{anlegg.anleggNavn || "—"}</div>
         <div className="id">

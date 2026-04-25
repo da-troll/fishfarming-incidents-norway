@@ -1,4 +1,4 @@
-import type { Anlegg } from "../types";
+import type { Anlegg, Eier } from "../types";
 
 // Upstream latency is ~linear in page size: limit=50 ≈ 7s, limit=200 ≈ 20s,
 // limit=500 ≈ 42s. Smaller pages = rows on screen sooner. Ramp up so the
@@ -18,8 +18,15 @@ export function pageSizeForIndex(i: number): number {
   return i < RAMP.length ? RAMP[i] : BULK_PAGE_SIZE;
 }
 
+/** Stripped-down anlegg shape from upstream — sykdomstilfeller embedded summary
+ * is dropped at parse time; we get richer data from the rapporteringer endpoint. */
+export type AnleggBase = Omit<Anlegg, "sykdomstilfeller" | "arter"> & {
+  /** Raw eiere preserved as-is */
+  eiere: Eier[];
+};
+
 export interface AnleggPage {
-  items: Anlegg[];
+  items: AnleggBase[];
   total: number | null;
 }
 
@@ -27,8 +34,42 @@ export async function fetchAnleggPage(offset: number, limit: number): Promise<An
   const url = `/api/fiskehelseregisteret/v1/anlegg?limit=${limit}&offset=${offset}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const items = (await res.json()) as Anlegg[];
+  type Raw = AnleggBase & { sykdomstilfeller?: unknown; arter?: unknown };
+  const raw = (await res.json()) as Raw[];
+  const items: AnleggBase[] = raw.map((a) => ({
+    anleggId: a.anleggId,
+    anleggNavn: a.anleggNavn,
+    produksjonsform: a.produksjonsform ?? [],
+    eiere: a.eiere ?? [],
+  }));
   const totalHeader = res.headers.get("x-count");
   const total = totalHeader ? Number(totalHeader) : null;
   return { items, total: Number.isFinite(total) ? total : null };
+}
+
+interface ReportRaw {
+  id: string;
+  opprettet: string;
+  oppdatert: string;
+  lokalitetsnummer?: number;
+  lokalitetsnavn: string;
+  varslingsdato: string;
+  oppdrettersMistankedato: string | null;
+  kvalitetssikretMistankedato: string | null;
+  diagnosedato: string | null;
+  avslutningsdato: string | null;
+  avslutningsårsak: string | null;
+  ugyldiggjøringsdato: string | null;
+  sykdomstype: string;
+  sykdomssubtype: string | null;
+  arter: Array<{ artskode: string }>;
+}
+
+/** Fetch all sykdomstilfeller reports — dataset is small (~200 records) so
+ * one big page is fine. */
+export async function fetchAllReports(): Promise<ReportRaw[]> {
+  const url = `/api/sykdomstilfeller/v1/rapporteringer?limit=1000&offset=0`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as ReportRaw[];
 }

@@ -1,6 +1,6 @@
 import type { Eier } from "../types";
 
-export function fmtDate(iso?: string): string {
+export function fmtDate(iso?: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;

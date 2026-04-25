@@ -61,7 +61,7 @@ export function Masthead({
           <h1>
             Fiskehelseregisteret <em>— anleggsoversikt</em>
           </h1>
-          <div className="sub">Live · via lokal proxy · Mattilsynet</div>
+          <div className="sub">Live · Mattilsynet</div>
         </div>
       </div>
       <div className="meta meta-row">

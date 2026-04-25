@@ -1,11 +1,34 @@
-import type { Anlegg } from "../types";
+import type { Anlegg, Sykdomstilfelle } from "../types";
 import { DiseaseBadge } from "./DiseaseBadge";
 import { sykFull } from "../lib/sykdom";
 import { fmtDate } from "../lib/format";
+import { STATUS_LABELS, årsakLabel } from "../lib/cases";
+import { artLabel } from "../lib/arter";
 
 interface Props {
   anlegg: Anlegg | null;
   onClose: () => void;
+}
+
+function CaseTimeline({ c }: { c: Sykdomstilfelle }) {
+  const rows: Array<[string, string | null]> = [
+    ["Mistanke (oppdretter)", c.oppdrettersMistankedato],
+    ["Mistanke (kvalitetssikret)", c.kvalitetssikretMistankedato],
+    ["Varsling", c.varslingsdato],
+    ["Diagnose", c.diagnosedato],
+    ["Avsluttet", c.avslutningsdato],
+    ["Ugyldiggjort", c.ugyldiggjøringsdato],
+  ].filter(([, v]) => v !== null) as Array<[string, string]>;
+  return (
+    <dl className="case-timeline">
+      {rows.map(([label, val]) => (
+        <div key={label} className="case-tl-row">
+          <dt>{label}</dt>
+          <dd>{fmtDate(val)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 export function DetailPanel({ anlegg, onClose }: Props) {
@@ -49,13 +72,36 @@ export function DetailPanel({ anlegg, onClose }: Props) {
       <section>
         <h3>Sykdomstilfeller ({cases.length})</h3>
         {cases.length ? (
-          cases.map((c, i) => (
-            <div className="case-row" key={`${c.sykdomstype}-${i}`}>
-              <DiseaseBadge sykdomstype={c.sykdomstype} variant="solid" />
-              <div>
-                <div className="case-name">{sykFull(c.sykdomstype)}</div>
+          cases.map((c) => (
+            <div className={`case-block status-${c.status}`} key={c.id}>
+              <div className="case-block-head">
+                <DiseaseBadge sykdomstype={c.sykdomstype} variant="solid" />
+                <div className="case-block-title">
+                  <div className="case-name">{sykFull(c.sykdomstype)}</div>
+                  {c.sykdomssubtype && (
+                    <div className="case-subtype">{c.sykdomssubtype}</div>
+                  )}
+                </div>
+                <span className={`status-pill status-pill-${c.status}`}>
+                  {STATUS_LABELS[c.status]}
+                </span>
               </div>
-              <div className="case-date">{fmtDate(c.diagnoseDato)}</div>
+              {c.arter.length > 0 && (
+                <div className="case-arter">
+                  {c.arter.map((a) => (
+                    <span className="tag" key={a}>
+                      {artLabel(a)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <CaseTimeline c={c} />
+              {c.avslutningsårsak && (
+                <div className="case-årsak">
+                  <span className="case-årsak-label">Årsak:</span>{" "}
+                  {årsakLabel(c.avslutningsårsak)}
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -99,7 +145,7 @@ export function DetailPanel({ anlegg, onClose }: Props) {
         {arter.length ? (
           arter.map((a) => (
             <span className="tag" key={a}>
-              {a}
+              {artLabel(a)}
             </span>
           ))
         ) : (

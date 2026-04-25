@@ -39,7 +39,7 @@ The `/anlegg` endpoint is **fully public** — no Maskinporten, no OAuth, just a
 
 ### Endpoints this project actually uses
 
-Only one endpoint is wired up today:
+Two endpoints, joined client-side by `lokalitetsnummer`:
 
 #### `GET /api/fiskehelseregisteret/v1/anlegg`
 
@@ -108,9 +108,30 @@ implementation (discovered during development):
   some macOS setups — the TLS connection stalls for 30–60s before failing.
   The proxy deliberately uses `node:https` instead.
 
+#### `GET /api/sykdomstilfeller/v1/rapporteringer`
+
+Full disease-case reports (~190 records — small, fetched in one page).
+Joined into the anlegg view by `lokalitetsnummer`. Each report carries the
+**lifecycle dates** (`varslingsdato`, `oppdrettersMistankedato`,
+`kvalitetssikretMistankedato`, `diagnosedato`, `avslutningsdato`,
+`ugyldiggjøringsdato`), `avslutningsårsak`, `sykdomssubtype` (e.g. `PD_SAV2` /
+`PD_SAV3`), and `arter` per case (which the `/anlegg` endpoint stopped
+populating in 2026).
+
+A single anlegg often has multiple report revisions for the same case
+(updates over time). The loader dedupes by `(lokalitetsnummer, sykdomstype,
+varslingsdato)` keeping the most-recently `oppdatert` row.
+
+**Note on enum drift between endpoints.** The two endpoints disagree on
+spelling — `/anlegg` uses anglicized `INFEKSIOES_…` while `/rapporteringer`
+uses Norwegian `INFEKSIØS_…`. The loader normalizes to the OES form
+internally (`src/lib/sykdom.ts → normalizeSykdomstype`). The reports endpoint
+also exposes three types absent from `/anlegg`: VNN (viral nervøs nekrose),
+PRS (piscirickettsiose), and "ny smittsom sykdom i Norge".
+
 ### The `Sykdomstype` enum
 
-Nine reportable diseases. The app renders each with a short red-badge code
+Twelve reportable diseases (nine on `/anlegg`, twelve on `/rapporteringer`). The app renders each with a short red-badge code
 plus the full Norwegian name in a tooltip.
 
 | Enum value                                               | Short | Full name                                              |
@@ -124,6 +145,9 @@ plus the full Norwegian name in a tooltip.
 | `BAKTERIELL_NYRESYKE`                                    | BKD   | Bakteriell nyresyke                                    |
 | `SYSTEMISK_INFEKSJON_MED_FLAVOBACTERIUM_PSYCHROPHILUM`   | FLAV  | Systemisk infeksjon m/ *Flavobacterium psychrophilum*  |
 | `INFEKSJON_GYRODACTYLUS_SALARIS`                         | GYRO  | Infeksjon med *Gyrodactylus salaris*                   |
+| `VIRAL_NERVOES_NEKROSE`                                  | VNN   | Viral nervøs nekrose *(reports endpoint only)*         |
+| `PISCIRICKETTSIOSE`                                      | PRS   | Piscirickettsiose *(reports endpoint only)*            |
+| `NY_SMITTSOM_SYKDOM_I_NORGE`                             | NY    | Ny smittsom sykdom i Norge *(reports endpoint only)*   |
 
 Canonical mapping lives in `src/lib/sykdom.ts`.
 
@@ -132,17 +156,34 @@ Canonical mapping lives in `src/lib/sykdom.ts`.
 The API exposes more than this viewer currently consumes. Candidates for
 future work:
 
-- `GET /api/sykdomstilfeller/v1/rapporteringer` — fuller case lifecycle
-  (varslingsdato, diagnosedato, avslutningsdato, avslutningsårsak, subtype).
-  The summary embedded in `/anlegg` is abbreviated; this endpoint is the
-  source of truth for clinical detail.
-- `GET /api/fiskehelseregisteret/v1/anlegg/{anleggId}` — single-site lookup.
+- `GET /api/lakselus/v2/rapporteringer` — sea-lice reports. **~82 700
+  records** (50× this app's current dataset). Weekly per-facility louse
+  counts (adult females, motile, fixed) + sea temperature + treatments
+  (medicinal, non-medicinal, combination) + resistance suspicions +
+  sensitivity studies. Would warrant its own page/tab rather than merging
+  into the anlegg row view.
+- `GET /api/fiskehelseregisteret/v1/anlegg/{anleggId}` — single-site lookup
+  (currently we list-paginate everything).
 - `/abonnement` endpoints — push subscriptions to new cases (Maskinporten
   required).
 
 Cross-referencing `anleggId` against
 [Akvakulturregisteret](https://sikker.fiskeridir.no/akvakulturregisteret/)
 would add latitude/longitude for a map view.
+
+---
+
+## App features
+
+| Group | Features |
+|-------|----------|
+| **Filtering** | Multi-select for sykdomstype, produksjonsform, arter, status (aktiv/avsluttet/ugyldig). Search across name, eier, orgnr, anleggs-ID. Date range with quick presets (siste 30 dager / 12 mnd / i år). "Bare med tilfeller" toggle. |
+| **Sort** | Five orderings: flest tilfeller først (default), navn A→Å, navn Å→A, siste diagnose først, anleggs-ID stigende. |
+| **Selection + export** | Per-row checkboxes with header tri-state (none/all/indeterminate) and shift-click range. Floating bulk action bar. CSV export (UTF-8 BOM + semicolon separator for Norwegian Excel compatibility) — both anlegg-mode (one row per facility) and per-case mode (denormalized). |
+| **Active filter chips** | Removable pills below the toolbar with per-chip X and "Tøm alle". |
+| **URL state** | Full criteria round-trips through `URLSearchParams`. Shareable deep-links: `?syk=PANKREASSYKDOM&status=aktiv&fra=2025-01-01`. |
+| **Detail panel** | Per-case timeline (mistanke → varsling → diagnose → avsluttet → ugyldig), status pill, sykdomssubtype, arter, eiere with orgnr, produksjonsform tags. |
+| **Custom DatePicker** | Hand-rolled, design-system-compliant. Norwegian month/day names, week-starts-Monday, range tint visualization across both pickers, today/clear actions, min/max coupling. |
 
 ---
 
