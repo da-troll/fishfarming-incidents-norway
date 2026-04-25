@@ -114,13 +114,14 @@ export const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export function isFilterActive(c: FilterCriteria): boolean {
+  // onlyWithCases is intentionally excluded — its toggle in the main toolbar
+  // already communicates active state; surfacing it as a chip is redundant.
   return Boolean(
     c.query ||
       c.sykdomstyper.length ||
       c.produksjonsformer.length ||
       c.arter.length ||
       c.caseStatuses.length ||
-      c.onlyWithCases ||
       c.diagnoseDatoFra ||
       c.diagnoseDatoTil ||
       c.sortBy !== "cases-desc",

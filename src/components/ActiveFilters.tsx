@@ -61,13 +61,6 @@ export function ActiveFilters({ criteria, onChange, resultCount, totalCount }: P
         }),
     });
   }
-  if (criteria.onlyWithCases) {
-    chips.push({
-      key: "cases",
-      label: "Bare med sykdomstilfeller",
-      onRemove: () => onChange({ ...criteria, onlyWithCases: false }),
-    });
-  }
   if (criteria.sortBy !== "cases-desc") {
     chips.push({
       key: "sort",
