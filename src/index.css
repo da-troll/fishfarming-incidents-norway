@@ -925,19 +925,12 @@ header.masthead {
 /* =========================================================================
    Checkbox column on table
    ========================================================================= */
-table col.col-check-c { width: 44px; }
+table col.col-check-c { width: 64px; }
 .col-check {
-  text-align: center !important;
-  padding-left: 12px !important;
-  padding-right: 4px !important;
+  padding-left: 40px !important;
+  padding-right: 8px !important;
   vertical-align: middle !important;
-}
-thead th.col-check {
-  padding-left: 40px !important;
-}
-tbody td.col-check {
-  padding-left: 40px !important;
-  padding-right: 4px !important;
+  text-align: left !important;
 }
 .col-check input[type="checkbox"] {
   cursor: pointer;
