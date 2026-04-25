@@ -5,18 +5,155 @@ whether a particular Norwegian aquaculture site (*anlegg*) has had a reported
 fish-disease case, and browse/filter the full national inventory of ~1 500
 sites.
 
-This was originally built as a weekend exploration after wanting to look up a
-specific *lokalitetsnummer* and finding no user-friendly public frontend on
-top of the official API. The current version is a React + TypeScript + Vite
-SPA that streams live data through a small local Node proxy.
+**🌐 Live at <https://fish.trollefsen.com>** — no install, no account.
 
-**Stack at a glance**
+---
+
+## How to use it (live site)
+
+The app loads all ~1 540 Norwegian aquaculture facilities and joins them with
+the disease-case reports from Mattilsynet's open API. The full dataset streams
+in over ~30–60 seconds; you can start filtering and clicking around as soon as
+the first rows appear.
+
+### Quick tour
+
+| What you see | What it means |
+|---|---|
+| **Anlegg (1 540)** in the column header | Live count of facilities matching your current filters. Updates as you filter. |
+| **Red left-edge stripe** on a row | This facility has at least one disease case on record. |
+| **Red badges (PD, ILA, FRA, …)** in the right column | Short codes for reportable diseases. Hover for the full Norwegian name. |
+| **`64 med sykdomstilfeller`** in the masthead | How many facilities have any reported case. Updates as data streams in. |
+| **`STORE KUFJORD` highlighted in tan** | Currently selected — its full detail panel is open on the right. |
+
+### Searching
+
+Type into the **Søk** box to filter by:
+- Facility name (e.g. `austevoll`)
+- Owner name (e.g. `mowi`)
+- Owner organisation number (e.g. `983970400`)
+- Lokalitetsnummer / anleggs-ID (e.g. `13562`)
+
+Search is substring-matching and case-insensitive. Numeric input is matched
+against the lokalitetsnummer.
+
+### Filtering
+
+- **Bare med tilfeller** (toolbar toggle): hides all facilities without any
+  disease cases. Useful when you only care about active outbreaks.
+- **Avanserte filtre ▾**: opens a panel with six more controls:
+  - **Sortering** — pick the row order (most cases first, name A→Å, latest
+    diagnose, ID, …).
+  - **Sykdomstype** — multi-select. Pick one or more diseases (PD, ILA, etc.).
+  - **Status** — `Aktiv`, `Avsluttet`, or `Ugyldiggjort`. Aktiv = still open.
+  - **Diagnosedato** — date range. Click the field to pop a calendar with
+    quick presets (`Siste 30 dager`, `Siste 12 mnd`, `I år`). Pick two dates
+    for a custom range, or click a preset button.
+  - **Produksjonsform** — multi-select (MATFISK, SETTEFISK, STAMFISK, …).
+  - **Arter** — multi-select species (Atlantisk laks, Regnbueørret, …). This
+    column auto-hides when no facility has species data populated upstream.
+
+The badge `(2)` next to **Avanserte filtre** shows how many advanced filters
+are active even when the panel is collapsed.
+
+### Active-filter chips
+
+When any filter is on, a row of removable chips appears under the toolbar:
+
+```
+1 540 av 1 540 treff   [Sykdom: PD ✕]   [Status: Aktiv ✕]                Tøm alle
+```
+
+- Click a chip's **✕** to remove just that filter.
+- Click **Tøm alle** to reset everything (including sort and the
+  "Bare med tilfeller" toggle).
+
+### Inspecting a facility
+
+Click any row to open the detail panel on the right. You'll see:
+
+- Facility name + lokalitetsnummer, with a link to Akvakulturregisteret
+- Each disease case as a card with:
+  - Status pill (`Aktiv` / `Avsluttet` / `Ugyldiggjort`)
+  - Subtype if any (e.g. `PD_SAV3` for Pankreassykdom subtype 3)
+  - Species
+  - Full timeline: mistanke (oppdretter) → mistanke (kvalitetssikret) →
+    varsling → diagnose → avsluttet → ugyldig
+  - Closure reason (`avslutningsårsak`) when applicable
+- Owners with organisation number
+- Production form tags
+- Species tags
+
+Click the row again (or anywhere outside the panel) to close it. On mobile,
+the detail slides up from the bottom and has a circular `×` close button.
+
+### Selecting and exporting
+
+- **One row checkbox**: toggles a row's selection (does **not** open the
+  detail panel — click the row body for that).
+- **Header checkbox**: tri-state — empty / all visible / partial. Click to
+  select or clear all currently rendered rows.
+- **Shift-click** a checkbox: select all rows between this and the previously
+  clicked checkbox.
+
+When you have at least one row checked, a floating dark **bulk action bar**
+appears at the bottom-centre of the screen:
+
+```
+12 anlegg valgt    [Eksporter valgte (12)]   [Tøm valg]
+```
+
+The toolbar's **Eksporter** button always exports the currently filtered
+list. The label adapts: `Eksporter (47)` when nothing is selected,
+`Eksporter alle filtrerte (47)` when you have separate selections.
+
+CSV format:
+- Semicolon-separated (Norwegian Excel default — opens cleanly in Excel
+  without the comma-vs-semicolon dance).
+- UTF-8 with BOM so `æøå` render correctly in Excel.
+- Filename includes a timestamp and row count: `fiskehelse-2026-04-25-1530-47anlegg.csv`.
+
+### Shareable links
+
+Every filter and sort change is reflected in the URL. You can copy the
+address bar at any time and the next person to open the link will see the
+same filtered view. Examples:
+
+- All Pankreassykdom cases since the start of 2026:
+  `https://fish.trollefsen.com/?syk=PANKREASSYKDOM&fra=2026-01-01`
+- Active ILA outbreaks, sorted by most recent diagnose:
+  `https://fish.trollefsen.com/?syk=INFEKSIOES_LAKSEANEMI&status=aktiv&sort=date-desc`
+- One owner's facilities:
+  `https://fish.trollefsen.com/?q=mowi`
+
+### Keyboard shortcuts
+
+- `Esc` — closes any open dropdown or date picker
+- `Space` (when a row is focused) — toggles its checkbox
+- `Tab` / `Shift+Tab` — moves focus through controls in document order
+
+### Caveats / things worth knowing
+
+- **Data is live from Mattilsynet.** Lookups are proxied with a 5-minute
+  in-memory cache, so changes upstream propagate within minutes.
+- **`arter` field is currently sparse.** Mattilsynet's `/anlegg` endpoint
+  stopped returning species directly; this app pulls them from the
+  `/sykdomstilfeller` reports endpoint instead, so a facility's species list
+  reflects what's been reported in disease cases — not necessarily everything
+  the facility farms.
+- **Some 1959 timeline dates** show up on a few cases. That's a Mattilsynet
+  data-migration placeholder, not an actual 67-year-old case. Not a bug on
+  our side.
+
+---
+
+## Stack at a glance
 
 | Piece       | Tech                                                   |
 |-------------|--------------------------------------------------------|
 | Frontend    | React 18 + TypeScript (strict) + Vite 6 + Tailwind 3   |
 | Styling     | Hand-written CSS (editorial/newspaper aesthetic) + CSS vars, Tailwind for layout utilities |
-| Data layer  | Plain `fetch` + a module-singleton paginated loader    |
+| Data layer  | Plain `fetch` + a module-singleton paginated loader, joining `/anlegg` with `/sykdomstilfeller/v1/rapporteringer` |
 | Proxy       | Node `node:https` + keep-alive agent + in-memory cache + retry-on-5xx |
 | Legacy      | A vanilla-HTML static viewer and vanilla-HTML live viewer (kept under `legacy/` as references) |
 | Language    | All user-facing strings in Norwegian bokmål            |
