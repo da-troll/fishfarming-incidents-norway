@@ -37,7 +37,7 @@ export function SingleSelect({ label, options, value, onChange }: Props) {
       <button
         id={id}
         type="button"
-        className="ms-trigger ms-trigger-active"
+        className="ms-trigger"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
