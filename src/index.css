@@ -1109,7 +1109,7 @@ tbody tr.selected .badge {
 }
 .case-block-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
   margin-bottom: 8px;

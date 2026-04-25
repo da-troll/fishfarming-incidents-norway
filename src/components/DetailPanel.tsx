@@ -1,5 +1,4 @@
 import type { Anlegg, Sykdomstilfelle } from "../types";
-import { DiseaseBadge } from "./DiseaseBadge";
 import { sykFull } from "../lib/sykdom";
 import { fmtDate } from "../lib/format";
 import { STATUS_LABELS, årsakLabel } from "../lib/cases";
@@ -75,7 +74,6 @@ export function DetailPanel({ anlegg, onClose }: Props) {
           cases.map((c) => (
             <div className={`case-block status-${c.status}`} key={c.id}>
               <div className="case-block-head">
-                <DiseaseBadge sykdomstype={c.sykdomstype} variant="solid" />
                 <div className="case-block-title">
                   <div className="case-name">{sykFull(c.sykdomstype)}</div>
                   {c.sykdomssubtype && (
