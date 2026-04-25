@@ -1039,6 +1039,12 @@ thead th:last-child {
 thead th.right {
   text-align: right;
 }
+.th-count {
+  color: var(--ink-2);
+  font-weight: 400;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
 tbody tr {
   border-bottom: 1px solid var(--rule);
   cursor: pointer;

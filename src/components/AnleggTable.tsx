@@ -69,7 +69,7 @@ export function AnleggTable({
           <thead>
             <tr>
               <th className="col-check" />
-              <th>Anlegg</th>
+              <th>Anlegg <span className="th-count">(0)</span></th>
               <th>Eier</th>
               <th className="right">Sykdomstilfeller</th>
             </tr>
@@ -123,7 +123,9 @@ export function AnleggTable({
                 onToggle={onToggleAllVisible}
               />
             </th>
-            <th>Anlegg</th>
+            <th>
+              Anlegg <span className="th-count">({fmtNumber(anlegg.length)})</span>
+            </th>
             <th>Eier</th>
             <th className="right">Sykdomstilfeller</th>
           </tr>
