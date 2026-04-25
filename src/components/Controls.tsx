@@ -97,14 +97,6 @@ export function Controls({
             onChange={(e) => onChange({ ...criteria, query: e.target.value })}
           />
         </div>
-        <MultiSelect
-          label="Sykdomstype"
-          options={sykdomstyper}
-          selected={criteria.sykdomstyper}
-          onChange={(next) =>
-            onChange({ ...criteria, sykdomstyper: next as Sykdomstype[] })
-          }
-        />
         <button
           type="button"
           className={"filter-pill" + (criteria.onlyWithCases ? " active" : "")}
@@ -114,12 +106,6 @@ export function Controls({
           <span className="filter-pill-dot" aria-hidden />
           Bare med tilfeller
         </button>
-        <MultiSelect
-          label="Produksjonsform"
-          options={produksjonsformer}
-          selected={criteria.produksjonsformer}
-          onChange={(next) => onChange({ ...criteria, produksjonsformer: next })}
-        />
         <button
           type="button"
           className={
@@ -157,6 +143,14 @@ export function Controls({
             onChange={(v) => onChange({ ...criteria, sortBy: v as SortKey })}
           />
           <MultiSelect
+            label="Sykdomstype"
+            options={sykdomstyper}
+            selected={criteria.sykdomstyper}
+            onChange={(next) =>
+              onChange({ ...criteria, sykdomstyper: next as Sykdomstype[] })
+            }
+          />
+          <MultiSelect
             label="Status"
             options={STATUS_OPTIONS}
             selected={criteria.caseStatuses}
@@ -164,14 +158,6 @@ export function Controls({
               onChange({ ...criteria, caseStatuses: next as CaseStatus[] })
             }
           />
-          {arter.length > 0 && (
-            <MultiSelect
-              label="Arter"
-              options={arter}
-              selected={criteria.arter}
-              onChange={(next) => onChange({ ...criteria, arter: next })}
-            />
-          )}
           <div className="date-range">
             <label>Diagnosedato</label>
             <DateRangePicker
@@ -182,6 +168,20 @@ export function Controls({
               }
             />
           </div>
+          <MultiSelect
+            label="Produksjonsform"
+            options={produksjonsformer}
+            selected={criteria.produksjonsformer}
+            onChange={(next) => onChange({ ...criteria, produksjonsformer: next })}
+          />
+          {arter.length > 0 && (
+            <MultiSelect
+              label="Arter"
+              options={arter}
+              selected={criteria.arter}
+              onChange={(next) => onChange({ ...criteria, arter: next })}
+            />
+          )}
         </div>
       )}
     </>
