@@ -57,12 +57,9 @@ export function Masthead({
           width={56}
           height={56}
         />
-        <div>
-          <h1>
-            Fiskehelseregisteret <em>— anleggsoversikt</em>
-          </h1>
-          <div className="sub">Live · Mattilsynet</div>
-        </div>
+        <h1>
+          Fiskehelseregisteret <em>— anleggsoversikt</em>
+        </h1>
       </div>
       <div className="meta meta-row">
         {statusNode && <span className="meta-item meta-status">{statusNode}</span>}
