@@ -10,6 +10,7 @@
   --ink: #1a1a1d;
   --ink-2: #3a3936;
   --ink-warm: #8a7551;
+  --row-selected: #a89572;
   --mute: #8a7e6e;
   --alarm: #c7382d;
   --alarm-bg: #f3d9d5;
@@ -1047,7 +1048,7 @@ tbody tr:hover {
   background: var(--paper-2);
 }
 tbody tr.selected {
-  background: var(--ink-warm);
+  background: var(--row-selected);
   color: var(--paper);
 }
 tbody tr.selected td .id,
@@ -1064,6 +1065,12 @@ tbody tr.selected.has-cases {
 }
 tbody td {
   padding: 14px 16px;
+  vertical-align: middle;
+}
+/* Anlegg cell (2nd col) has stacked navn + id; keep it top-aligned so the
+ * navn line anchors the visual baseline. The eier and badges columns center
+ * against the resulting row height. */
+tbody td:nth-child(2) {
   vertical-align: top;
 }
 tbody td:first-child {
