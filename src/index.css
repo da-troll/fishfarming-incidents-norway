@@ -162,8 +162,8 @@ header.masthead {
   border-color: var(--rule-2);
   cursor: not-allowed;
 }
-.controls label,
-.controls-advanced label {
+.controls label:not(.ms-item),
+.controls-advanced label:not(.ms-item) {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -284,6 +284,13 @@ header.masthead {
   font-family: var(--sans);
   font-size: 13px;
   color: var(--ink);
+  /* Inherit .ms-item's display/padding/gap exactly. */
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  line-height: 1.4;
 }
 .ms-item-current {
   font-weight: 500;
